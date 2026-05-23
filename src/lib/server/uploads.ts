@@ -1,10 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
+import {
+  getMediaDirectory,
+  getMediaPublicPath,
+  type MediaFolder,
+} from "@/lib/server/storage";
 
 type UploadOptions = {
   file: File | null;
-  folder: "uploads" | "avatars";
+  folder: MediaFolder;
   maxSizeInMb?: number;
 };
 
@@ -25,7 +30,7 @@ export async function saveImageFile({
     throw new Error(`L'image doit faire moins de ${maxSizeInMb} Mo.`);
   }
 
-  const directory = join(process.cwd(), "public", folder);
+  const directory = getMediaDirectory(folder);
   await mkdir(directory, { recursive: true });
 
   const fallbackExtension = file.type.split("/")[1] || "jpg";
@@ -36,5 +41,5 @@ export async function saveImageFile({
 
   await writeFile(filePath, buffer);
 
-  return `/${folder}/${filename}`;
+  return getMediaPublicPath(folder, filename);
 }

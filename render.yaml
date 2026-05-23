@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: coupdemain
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: APP_STORAGE_ROOT
+        value: /opt/render/project/src/storage
+    disk:
+      name: storage
+      mountPath: /opt/render/project/src/storage
+      sizeGB: 1

@@ -2,6 +2,7 @@ import { randomUUID, scryptSync } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { getDatabaseDirectory, getMediaDirectory } from "@/lib/server/storage";
 
 type DatabaseGlobal = typeof globalThis & {
   __coupdemainDb?: DatabaseSync;
@@ -189,9 +190,9 @@ function hashSeedPassword(password: string) {
 }
 
 function ensureFilesystem() {
-  const dataDirectory = join(process.cwd(), "data");
-  const uploadDirectory = join(process.cwd(), "public", "uploads");
-  const avatarDirectory = join(process.cwd(), "public", "avatars");
+  const dataDirectory = getDatabaseDirectory();
+  const uploadDirectory = getMediaDirectory("uploads");
+  const avatarDirectory = getMediaDirectory("avatars");
 
   if (!existsSync(dataDirectory)) {
     mkdirSync(dataDirectory, { recursive: true });
@@ -417,7 +418,7 @@ export function getDatabase() {
 
   if (!runtime.__coupdemainDb) {
     ensureFilesystem();
-    const databasePath = join(process.cwd(), "data", "coupdemain.sqlite");
+    const databasePath = join(getDatabaseDirectory(), "coupdemain.sqlite");
     runtime.__coupdemainDb = new DatabaseSync(databasePath);
     initializeDatabase(runtime.__coupdemainDb);
   }
