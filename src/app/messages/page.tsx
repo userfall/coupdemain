@@ -8,8 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function MessagesPage() {
   const currentUser = await requireUser("/connexion?next=/messages");
-  const conversations = listConversationsForUser(currentUser.id);
-  const unreadCount = getUnreadMessageCount(currentUser.id);
+  const [conversations, unreadCount] = await Promise.all([
+    listConversationsForUser(currentUser.id),
+    getUnreadMessageCount(currentUser.id),
+  ]);
 
   if (conversations.length > 0) {
     redirect(`/messages/${conversations[0].id}`);

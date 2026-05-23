@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     ?.split("=")[1];
 
   if (token) {
-    deleteSession(token);
+    await deleteSession(token);
   }
 
   const response = NextResponse.json({ ok: true });

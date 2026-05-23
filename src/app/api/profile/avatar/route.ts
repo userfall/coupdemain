@@ -3,7 +3,7 @@ import { getRequestUser, updateUserAvatar } from "@/lib/server/auth";
 import { saveImageFile } from "@/lib/server/uploads";
 
 export async function POST(request: Request) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json(
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       );
     }
 
-    updateUserAvatar(user.id, avatarPath);
+    await updateUserAvatar(user.id, avatarPath);
 
     return NextResponse.json({ ok: true, avatarPath });
   } catch (error) {

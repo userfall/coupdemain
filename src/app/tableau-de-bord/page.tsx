@@ -6,9 +6,11 @@ import { getMarketplaceStats, listPosts } from "@/lib/server/marketplace";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
-  const stats = getMarketplaceStats();
-  const posts = listPosts(4);
+export default async function DashboardPage() {
+  const [stats, posts] = await Promise.all([
+    getMarketplaceStats(),
+    listPosts(4),
+  ]);
 
   return (
     <div className="space-y-8">

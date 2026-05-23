@@ -14,7 +14,7 @@ function isPostStatus(value: string): value is PostStatus {
 }
 
 export async function POST(request: Request, { params }: StatusRouteProps) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: StatusRouteProps) {
   }
 
   try {
-    updatePostStatus(user.id, postId, nextStatus);
+    await updatePostStatus(user.id, postId, nextStatus);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message =

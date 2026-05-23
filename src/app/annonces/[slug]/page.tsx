@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const { slug } = await params;
   const currentUser = await getCurrentUser();
-  const detail = getPostDetailBySlug(slug, currentUser?.id);
+  const detail = await getPostDetailBySlug(slug, currentUser?.id);
 
   if (!detail) {
     notFound();
@@ -36,17 +36,17 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   let post = detail;
 
   if (!detail.isOwner) {
-    incrementPostViews(detail.id);
+    await incrementPostViews(detail.id);
     post = {
       ...detail,
       views: detail.views + 1,
     };
   }
 
-  const similarPosts = listSimilarPosts(post, 3);
+  const similarPosts = await listSimilarPosts(post, 3);
   const existingConversationId =
     currentUser && !post.isOwner
-      ? findConversationForUserAndPost(post.id, currentUser.id)
+      ? await findConversationForUserAndPost(post.id, currentUser.id)
       : null;
 
   return (

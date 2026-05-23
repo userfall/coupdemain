@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   const currentUser = await requireUser("/connexion?next=/notifications");
-  const notifications = listNotificationsForUser(currentUser.id);
-  const unreadCount = getUnreadMessageCount(currentUser.id);
+  const [notifications, unreadCount] = await Promise.all([
+    listNotificationsForUser(currentUser.id),
+    getUnreadMessageCount(currentUser.id),
+  ]);
 
   return (
     <div className="space-y-8">

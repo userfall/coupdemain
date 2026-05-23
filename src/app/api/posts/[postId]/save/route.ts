@@ -9,7 +9,7 @@ type SaveRouteProps = {
 };
 
 export async function POST(request: Request, { params }: SaveRouteProps) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json(
@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: SaveRouteProps) {
   const { postId } = await params;
 
   try {
-    const result = toggleSavedPost(user.id, postId);
+    const result = await toggleSavedPost(user.id, postId);
     return NextResponse.json(result);
   } catch (error) {
     const message =

@@ -23,17 +23,17 @@ export default async function ConversationPage({
   const currentUser = await requireUser(
     `/connexion?next=${encodeURIComponent(`/messages/${conversationId}`)}`,
   );
-  const conversation = getConversationForUser(conversationId, currentUser.id);
+  const conversation = await getConversationForUser(conversationId, currentUser.id);
 
   if (!conversation) {
     notFound();
   }
 
-  const conversations = listConversationsForUser(currentUser.id);
+  const conversations = await listConversationsForUser(currentUser.id);
   const payload = {
     conversation,
     conversations,
-    unreadCount: getUnreadMessageCount(currentUser.id),
+    unreadCount: await getUnreadMessageCount(currentUser.id),
   } satisfies LiveConversationPayload;
 
   return <LiveConversationView initialData={payload} />;

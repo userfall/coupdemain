@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (findUserByEmail(email)) {
+  if (await findUserByEmail(email)) {
     return NextResponse.json(
       { error: "Un compte existe deja avec cet email." },
       { status: 409 },
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       folder: "avatars",
     });
 
-    const user = createUser({
+    const user = await createUser({
       displayName,
       city,
       email,
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       avatarPath,
     });
 
-    const session = createSession(user.id, rememberMe);
+    const session = await createSession(user.id, rememberMe);
     const response = NextResponse.json({
       ok: true,
       user,

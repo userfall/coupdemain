@@ -3,7 +3,7 @@ import { getRequestUser } from "@/lib/server/auth";
 import { startConversation } from "@/lib/server/messaging";
 
 export async function POST(request: Request) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json(
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    const result = startConversation({
+    const result = await startConversation({
       postId: body.postId?.trim() ?? "",
       senderId: user.id,
       content: body.content ?? "",

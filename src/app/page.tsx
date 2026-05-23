@@ -6,10 +6,12 @@ import { getCategories, getFeaturedPosts, getMarketplaceStats } from "@/lib/serv
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const stats = getMarketplaceStats();
-  const categories = getCategories();
-  const featuredPosts = getFeaturedPosts();
+export default async function Home() {
+  const [stats, categories, featuredPosts] = await Promise.all([
+    getMarketplaceStats(),
+    getCategories(),
+    getFeaturedPosts(),
+  ]);
   const highlightedCategories = categories.slice(0, 4);
 
   return (

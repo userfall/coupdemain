@@ -16,7 +16,7 @@ type CategorySeed = {
   textColor: string;
 };
 
-type UserSeed = {
+export type UserSeed = {
   id: string;
   email: string;
   displayName: string;
@@ -25,7 +25,7 @@ type UserSeed = {
   avatarPath?: string | null;
 };
 
-type PostSeed = {
+export type PostSeed = {
   id: string;
   userId: string;
   slug: string;
@@ -98,7 +98,7 @@ export const DEMO_ACCOUNT = {
   password: "demo1234",
 };
 
-const seedUsers: UserSeed[] = [
+export const seedUsers: UserSeed[] = [
   {
     id: "user-lea",
     email: DEMO_ACCOUNT.email,
@@ -122,7 +122,7 @@ const seedUsers: UserSeed[] = [
   },
 ];
 
-const seedPosts: PostSeed[] = [
+export const seedPosts: PostSeed[] = [
   {
     id: randomUUID(),
     userId: "user-lea",
@@ -182,7 +182,7 @@ const seedPosts: PostSeed[] = [
   },
 ];
 
-function hashSeedPassword(password: string) {
+export function hashSeedPassword(password: string) {
   const salt = "coupdemain-local-seed";
   const hash = scryptSync(password, salt, 64).toString("hex");
 

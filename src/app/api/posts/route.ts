@@ -3,7 +3,7 @@ import { getRequestUser } from "@/lib/server/auth";
 import { createPost } from "@/lib/server/marketplace";
 
 export async function POST(request: Request) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json(

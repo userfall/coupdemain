@@ -24,7 +24,7 @@ const memberNavigation = [
 export async function SiteHeader() {
   const currentUser = await getCurrentUser();
   const navigation = currentUser ? memberNavigation : guestNavigation;
-  const unreadCount = currentUser ? getUnreadMessageCount(currentUser.id) : 0;
+  const unreadCount = currentUser ? await getUnreadMessageCount(currentUser.id) : 0;
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/80 bg-white/88 backdrop-blur-xl">

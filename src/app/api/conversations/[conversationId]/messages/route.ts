@@ -9,7 +9,7 @@ type MessageRouteProps = {
 };
 
 export async function POST(request: Request, { params }: MessageRouteProps) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json(
@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: MessageRouteProps) {
   const { conversationId } = await params;
 
   try {
-    sendMessage({
+    await sendMessage({
       conversationId,
       senderId: user.id,
       content: body.content ?? "",

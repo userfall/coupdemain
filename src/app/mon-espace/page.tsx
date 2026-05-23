@@ -16,10 +16,12 @@ export const dynamic = "force-dynamic";
 
 export default async function MonEspacePage() {
   const currentUser = await requireUser("/connexion?next=/mon-espace");
-  const userPosts = listPostsByUser(currentUser.id);
-  const savedPosts = listSavedPosts(currentUser.id);
-  const conversations = listConversationsForUser(currentUser.id);
-  const stats = getMarketplaceStats();
+  const [userPosts, savedPosts, conversations, stats] = await Promise.all([
+    listPostsByUser(currentUser.id),
+    listSavedPosts(currentUser.id),
+    listConversationsForUser(currentUser.id),
+    getMarketplaceStats(),
+  ]);
   const openPosts = userPosts.filter((post) => post.status === "open").length;
 
   return (

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   const email = body.email?.trim() ?? "";
   const password = body.password ?? "";
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   if (!user || !verifyPassword(password, user.password_hash)) {
     return NextResponse.json(
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = createSession(user.id, body.rememberMe !== false);
+  const session = await createSession(user.id, body.rememberMe !== false);
   const response = NextResponse.json({
     ok: true,
     user: {

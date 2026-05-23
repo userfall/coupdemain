@@ -13,7 +13,7 @@ export default async function DeposerPage() {
     redirect("/connexion?next=/deposer");
   }
 
-  const categories = getCategories();
+  const categories = await getCategories();
 
   return (
     <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">

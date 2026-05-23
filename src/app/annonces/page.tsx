@@ -5,9 +5,8 @@ import { getCategories, listPosts } from "@/lib/server/marketplace";
 
 export const dynamic = "force-dynamic";
 
-export default function AnnoncesPage() {
-  const posts = listPosts();
-  const categories = getCategories();
+export default async function AnnoncesPage() {
+  const [posts, categories] = await Promise.all([listPosts(), getCategories()]);
 
   return (
     <div className="space-y-8">

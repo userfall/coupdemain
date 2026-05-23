@@ -5,6 +5,12 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { NextResponse } from "next/server";
 import type { SessionUser } from "@/lib/types";
 import { DEMO_ACCOUNT, getDatabase } from "@/lib/server/db";
+import { ensureSupabaseInitialized } from "@/lib/server/supabase-init";
+import {
+  isMissingRowError,
+  isSupabaseServerConfigured,
+  requireSupabaseAdmin,
+} from "@/lib/server/supabase-admin";
 
 type UserRow = {
   id: string;
@@ -13,6 +19,13 @@ type UserRow = {
   city: string;
   avatar_path: string | null;
   password_hash: string;
+  created_at: string;
+};
+
+type SessionRow = {
+  id: string;
+  user_id: string;
+  expires_at: string;
   created_at: string;
 };
 
@@ -51,6 +64,17 @@ function mapUserRow(row: SessionJoinRow): SessionUser {
   };
 }
 
+function toSessionUser(row: UserRow) {
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    city: row.city,
+    avatarPath: row.avatar_path,
+    createdAt: row.created_at,
+  } satisfies SessionUser;
+}
+
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
@@ -74,7 +98,27 @@ export function verifyPassword(password: string, storedHash: string) {
   );
 }
 
-export function findUserByEmail(email: string) {
+async function findSupabaseUserByEmail(email: string) {
+  await ensureSupabaseInitialized();
+  const supabase = requireSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", normalizeEmail(email))
+    .maybeSingle<UserRow>();
+
+  if (error && !isMissingRowError(error)) {
+    throw new Error(`Impossible de lire le compte: ${error.message}`);
+  }
+
+  return data ?? null;
+}
+
+export async function findUserByEmail(email: string) {
+  if (isSupabaseServerConfigured) {
+    return findSupabaseUserByEmail(email);
+  }
+
   const database = getDatabase();
 
   return (
@@ -84,7 +128,39 @@ export function findUserByEmail(email: string) {
   );
 }
 
-export function createUser(input: CreateUserInput) {
+async function createSupabaseUser(input: CreateUserInput) {
+  await ensureSupabaseInitialized();
+  const supabase = requireSupabaseAdmin();
+  const userId = randomBytes(16).toString("hex");
+  const email = normalizeEmail(input.email);
+  const createdAt = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("users")
+    .insert({
+      id: userId,
+      email,
+      display_name: input.displayName.trim(),
+      city: input.city.trim(),
+      avatar_path: input.avatarPath ?? null,
+      password_hash: hashPassword(input.password),
+      created_at: createdAt,
+    })
+    .select("*")
+    .single<UserRow>();
+
+  if (error) {
+    throw new Error(`Impossible de creer le compte: ${error.message}`);
+  }
+
+  return toSessionUser(data);
+}
+
+export async function createUser(input: CreateUserInput) {
+  if (isSupabaseServerConfigured) {
+    return createSupabaseUser(input);
+  }
+
   const database = getDatabase();
   const userId = randomBytes(16).toString("hex");
   const email = normalizeEmail(input.email);
@@ -115,7 +191,21 @@ export function createUser(input: CreateUserInput) {
   } satisfies SessionUser;
 }
 
-export function updateUserAvatar(userId: string, avatarPath: string | null) {
+export async function updateUserAvatar(userId: string, avatarPath: string | null) {
+  if (isSupabaseServerConfigured) {
+    await ensureSupabaseInitialized();
+    const { error } = await requireSupabaseAdmin()
+      .from("users")
+      .update({ avatar_path: avatarPath })
+      .eq("id", userId);
+
+    if (error) {
+      throw new Error(`Impossible de mettre a jour l'avatar: ${error.message}`);
+    }
+
+    return;
+  }
+
   const database = getDatabase();
 
   database
@@ -123,7 +213,34 @@ export function updateUserAvatar(userId: string, avatarPath: string | null) {
     .run(avatarPath, userId);
 }
 
-export function createSession(userId: string, remember = true) {
+async function createSupabaseSession(userId: string, remember = true) {
+  await ensureSupabaseInitialized();
+  const supabase = requireSupabaseAdmin();
+  const token = randomBytes(32).toString("hex");
+  const sessionLifetimeDays = remember ? 30 : 7;
+  const expiresAt = new Date(
+    Date.now() + sessionLifetimeDays * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { error } = await supabase.from("sessions").insert({
+    id: token,
+    user_id: userId,
+    expires_at: expiresAt,
+    created_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    throw new Error(`Impossible de creer la session: ${error.message}`);
+  }
+
+  return { token, expiresAt };
+}
+
+export async function createSession(userId: string, remember = true) {
+  if (isSupabaseServerConfigured) {
+    return createSupabaseSession(userId, remember);
+  }
+
   const database = getDatabase();
   const token = randomBytes(32).toString("hex");
   const sessionLifetimeDays = remember ? 30 : 7;
@@ -141,12 +258,69 @@ export function createSession(userId: string, remember = true) {
   return { token, expiresAt };
 }
 
-export function deleteSession(token: string) {
+export async function deleteSession(token: string) {
+  if (isSupabaseServerConfigured) {
+    await ensureSupabaseInitialized();
+    const { error } = await requireSupabaseAdmin()
+      .from("sessions")
+      .delete()
+      .eq("id", token);
+
+    if (error) {
+      throw new Error(`Impossible de supprimer la session: ${error.message}`);
+    }
+
+    return;
+  }
+
   const database = getDatabase();
   database.prepare("delete from sessions where id = ?").run(token);
 }
 
-export function getUserFromSessionToken(token: string | null | undefined) {
+async function getSupabaseUserFromSessionToken(token: string | null | undefined) {
+  if (!token) {
+    return null;
+  }
+
+  await ensureSupabaseInitialized();
+  const supabase = requireSupabaseAdmin();
+  const now = new Date().toISOString();
+
+  await supabase.from("sessions").delete().lte("expires_at", now);
+
+  const { data: sessionRow, error: sessionError } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("id", token)
+    .gt("expires_at", now)
+    .maybeSingle<SessionRow>();
+
+  if (sessionError && !isMissingRowError(sessionError)) {
+    throw new Error(`Impossible de lire la session: ${sessionError.message}`);
+  }
+
+  if (!sessionRow) {
+    return null;
+  }
+
+  const { data: userRow, error: userError } = await supabase
+    .from("users")
+    .select("id, email, display_name, city, avatar_path, created_at")
+    .eq("id", sessionRow.user_id)
+    .maybeSingle<SessionJoinRow>();
+
+  if (userError && !isMissingRowError(userError)) {
+    throw new Error(`Impossible de charger l'utilisateur: ${userError.message}`);
+  }
+
+  return userRow ? mapUserRow(userRow) : null;
+}
+
+export async function getUserFromSessionToken(token: string | null | undefined) {
+  if (isSupabaseServerConfigured) {
+    return getSupabaseUserFromSessionToken(token);
+  }
+
   if (!token) {
     return null;
   }
@@ -185,7 +359,7 @@ export function getSessionTokenFromRequest(request: Request) {
   );
 }
 
-export function getRequestUser(request: Request) {
+export async function getRequestUser(request: Request) {
   return getUserFromSessionToken(getSessionTokenFromRequest(request));
 }
 

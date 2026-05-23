@@ -6,6 +6,12 @@ import {
   getMediaPublicPath,
   type MediaFolder,
 } from "@/lib/server/storage";
+import {
+  getSupabasePublicUrl,
+  getSupabaseStorageBucket,
+  isSupabaseServerConfigured,
+  requireSupabaseAdmin,
+} from "@/lib/server/supabase-admin";
 
 type UploadOptions = {
   file: File | null;
@@ -36,9 +42,25 @@ export async function saveImageFile({
   const fallbackExtension = file.type.split("/")[1] || "jpg";
   const extension = extname(file.name).replace(".", "") || fallbackExtension;
   const filename = `${Date.now()}-${randomUUID()}.${extension}`;
-  const filePath = join(directory, filename);
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  if (isSupabaseServerConfigured) {
+    const path = `${folder}/${filename}`;
+    const { error } = await requireSupabaseAdmin().storage
+      .from(getSupabaseStorageBucket())
+      .upload(path, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (error) {
+      throw new Error(`Impossible d'envoyer l'image dans Supabase: ${error.message}`);
+    }
+
+    return getSupabasePublicUrl(path);
+  }
+
+  const filePath = join(directory, filename);
   await writeFile(filePath, buffer);
 
   return getMediaPublicPath(folder, filename);

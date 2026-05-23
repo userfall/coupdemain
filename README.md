@@ -8,7 +8,8 @@ CoupDeMain est une mini-place de marche solidaire locale. On peut y creer un com
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- SQLite locale via `node:sqlite`
+- SQLite locale via `node:sqlite` pour le dev
+- Supabase Database + Storage pour une mise en ligne gratuite au maximum
 
 ## Parcours fonctionnels
 
@@ -46,27 +47,59 @@ npm run lint
 npm run build
 ```
 
-## Mise en ligne
+## Mise en ligne gratuite au maximum
 
-Cette app utilise :
+Le projet peut maintenant fonctionner de deux manieres :
 
-- SQLite locale
-- des uploads d'images ecrits sur disque
+- en local, avec SQLite + fichiers sur disque
+- en ligne, avec Supabase pour la base et les images
 
-Du coup, un hebergement serverless classique comme Vercel n'est pas adapte pour une version publique persistante. Pour un vrai lien partageable, le chemin le plus simple est un hebergeur avec disque persistant, par exemple Render.
+### 1. Creer le projet Supabase
 
-Configuration conseillee pour Render :
+Dans Supabase :
 
-- Build command : `npm install && npm run build`
-- Start command : `npm run start -- --hostname 0.0.0.0 --port $PORT`
-- Variable d'environnement : `APP_STORAGE_ROOT=/opt/render/project/src/storage`
-- Persistent disk : monter le disque sur `/opt/render/project/src/storage`
+- cree un nouveau projet
+- ouvre le SQL Editor
+- colle puis execute `supabase/schema.sql`
+- ouvre Storage
+- cree un bucket `media`
+- rends ce bucket public
 
-Une fois deployee, les nouvelles images seront servies depuis `/media/...` et la base SQLite sera stockee dans le disque persistant.
+### 2. Recuperer les variables
+
+Dans Supabase, recopie :
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET=media`
+
+Le fichier d'exemple est [`.env.example`](</C:/Users/abdou/OneDrive/Dokumente/New project/coupdemain/.env.example>).
+
+### 3. Deployer sur Vercel
+
+Dans Vercel :
+
+- importe le repo GitHub `userfall/coupdemain`
+- garde le preset Next.js par defaut
+- ajoute les variables d'environnement Supabase
+- verifie que Node.js 22 est utilise
+- lance le deploiement
+
+Le lien public sera alors genere par Vercel, en general sous une forme proche de :
+
+`https://coupdemain.vercel.app`
+
+### Notes utiles
+
+- le client serveur utilise une cle serveur Supabase pour les operations privees
+- les images utilisateurs sont envoyees dans le bucket public `media`
+- si les variables Supabase ne sont pas renseignees, le projet retombe automatiquement sur le mode local SQLite
+- `render.yaml` reste disponible si tu veux plus tard une option avec disque persistant sans Supabase
 
 ## Suite logique
 
 1. Ajouter une vraie messagerie entre membres.
 2. Ajouter la moderation et le signalement d'annonce.
 3. Permettre l'edition et la fermeture d'une annonce.
-4. Migrer vers un backend distant si tu veux une mise en ligne publique.
+4. Brancher ensuite un vrai domaine si tu veux un lien plus propre.

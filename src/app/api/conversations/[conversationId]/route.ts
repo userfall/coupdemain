@@ -10,14 +10,14 @@ type ConversationRouteProps = {
 };
 
 export async function GET(request: Request, { params }: ConversationRouteProps) {
-  const user = getRequestUser(request);
+  const user = await getRequestUser(request);
 
   if (!user) {
     return NextResponse.json({ error: "Non authentifie." }, { status: 401 });
   }
 
   const { conversationId } = await params;
-  const conversation = peekConversationForUser(conversationId, user.id);
+  const conversation = await peekConversationForUser(conversationId, user.id);
 
   if (!conversation) {
     return NextResponse.json({ error: "Conversation introuvable." }, { status: 404 });
@@ -25,8 +25,8 @@ export async function GET(request: Request, { params }: ConversationRouteProps) 
 
   const payload = {
     conversation,
-    conversations: listConversationsForUser(user.id),
-    unreadCount: getUnreadMessageCount(user.id),
+    conversations: await listConversationsForUser(user.id),
+    unreadCount: await getUnreadMessageCount(user.id),
   } satisfies LiveConversationPayload;
 
   return NextResponse.json(payload);
